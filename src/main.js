@@ -4,6 +4,9 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 
+var cyanoBridge = new mdApi.CyanoBridge()
+Vue.prototype.cyanoBridge = cyanoBridge;
+
 /**
  * 使用第三方库 eventproxy 来注册事件，让原生触发，这样可以接收来自原生的消息。
  * 这里为了将事件代理对象ep作为全局变量使用，放到Vue的protptype里。其它框架同理。
@@ -21,16 +24,6 @@ function emitMessage(content) {
   ep.emit('OntMessage', content);
 }
 window.emitMessage = emitMessage;
-// import {
-//   utils
-// } from 'ontology-ts-sdk'
-// var EventEmitter = new utils.EventEmitter();
-// Vue.prototype.ee = EventEmitter;
-
-// function emitMessage(content) {
-//   console.log('from native: ' + content);
-//   EventEmitter.emit('OntMessage', content);
-// }
 
 
 Vue.config.productionTip = false

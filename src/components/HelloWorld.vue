@@ -45,11 +45,15 @@ export default {
   },
   mounted() {
     //add event listener to receive message from native client
-    this.ep.on('OntMessage', (message) => {
-      console.log('native sent: ' + message);
-      const res = JSON.parse(decodeURIComponent(atob(message)));
-      this.handleMessage(res)
-    })
+    // this.ep.on('OntMessage', (message) => {
+    //   console.log('native sent: ' + message);
+    //   const res = JSON.parse(decodeURIComponent(atob(message)));
+    //   this.handleMessage(res)
+    // })
+    const handler = (res) => {
+            this.handleInvokeResponse(res);
+        }
+    this.cyanoBridge.onMessage(handler);
   },
   methods: {
     invokeSc() {
@@ -68,15 +72,43 @@ export default {
           }
         }
       }
-      console.log(JSON.stringify(params))
-      const msg = btoa(encodeURIComponent(JSON.stringify(params))); 
-      const uri = 'ontprovider://ont.io?params='+msg;
-      window.prompt(uri)
+      const scriptHash = 'cd948340ffcf11d4f5494140c93885583110f3e9';
+      const operation = 'transferNativeAsset';
+      const args = [{
+          "name": "arg0",
+          type: 'String',
+          "value": "ont"
+        }, {
+          "name": "arg1",
+          type: 'Address',
+          "value": address
+        }, {
+          "name": "arg2",
+          type: 'Address',
+          "value": "AecaeSEBkt5GcBCxwz1F41TvdjX3dnKBkJ"
+        }, {
+          "name": "arg3",
+          type: 'Integer',
+          "value": 10
+        }]
+        const gasPrice = 500;
+        const gasLimit = 20000;
+        const payer = address;
+        const config = {
+          "login": true,
+          "message": "invoke smart contract test",
+          "url": ""
+        }
+        const uri = this.cyanoBridge.invoke(scriptHash, operation, args, gasPrice, gasLimit, payer, config);
+      // console.log(JSON.stringify(params))
+      // const msg = btoa(encodeURIComponent(JSON.stringify(params))); 
+      // const uri = 'ontprovider://ont.io?params='+msg;
+      // window.prompt(uri)
     },
-    handleMessage(message) {
+    handleInvokeResponse(res) {
       // dapp logic here
-      this.invokeRes = JSON.stringify(message);
-      console.log('get handled message: '+ JSON.stringify(message))
+      this.invokeRes = JSON.stringify(res);
+      console.log('get handled message: '+ JSON.stringify(res))
       a
     }
   }
