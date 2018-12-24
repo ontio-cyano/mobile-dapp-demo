@@ -3,8 +3,9 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+import CyanoBridge from 'cyanobridge'
 
-var cyanoBridge = new mdApi.CyanoBridge()
+var cyanoBridge = new CyanoBridge()
 Vue.prototype.cyanoBridge = cyanoBridge;
 
 /**

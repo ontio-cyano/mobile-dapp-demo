@@ -51,6 +51,7 @@ export default {
     //   this.handleMessage(res)
     // })
     const handler = (res) => {
+      console.log('native sent: ' + JSON.stringify(res))
             this.handleInvokeResponse(res);
         }
     this.cyanoBridge.onMessage(handler);
@@ -99,7 +100,7 @@ export default {
           "message": "invoke smart contract test",
           "url": ""
         }
-        const uri = this.cyanoBridge.invoke(scriptHash, operation, args, gasPrice, gasLimit, payer, config);
+        this.cyanoBridge.invoke(scriptHash, operation, args, gasPrice, gasLimit, payer, config);
       // console.log(JSON.stringify(params))
       // const msg = btoa(encodeURIComponent(JSON.stringify(params))); 
       // const uri = 'ontprovider://ont.io?params='+msg;
@@ -109,7 +110,6 @@ export default {
       // dapp logic here
       this.invokeRes = JSON.stringify(res);
       console.log('get handled message: '+ JSON.stringify(res))
-      a
     }
   }
 }

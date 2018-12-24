@@ -1,7 +1,5 @@
 # onto-dapi-demo
 
-Demo:  http://101.132.193.149:5000/#/
-
 > A Vue.js project
 
 实现Cyano移动端协议的demo。
@@ -32,27 +30,26 @@ npm run build --report
 
 For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
 
-## 关键原理
+## 工作原理
 
-关键是实现dapp（webview）与原生客户端的通信。我们制定了接口规范，dapp根据接口定义，发送特定消息给原生，原生拦截到消息，处理后发送回dapp。dapp需要首先注册好事件监听，原生通过调用js函数，触发事件，将处理结果返回给dapp。demo里有具体实现可以参考。
+关键是实现dapp（webview）与原生客户端的通信。我们制定了接口规范，dapp根据接口定义，发送特定消息给原生，原生拦截到消息，处理后发送回dapp。
+webview和原生通信都是通过 `window.postMessage` 的方式。
 
-这里需要注意的地方有：
-
-1. 发送的消息需要经过JSON转字符串 --》encodeURIComponent 字符串 —》字符串转base64 的处理过程。接收消息后也需要经过同样相反顺序的处理。
-
-2. dapp发送消息给原生的方式没有限制，常用的有 
-
-   * window.location.href = uri;
-   * window.postMessage
-   * window.prompt
-
-   我们的demo里使用的是window.prompt
-
-3. dapp需要首先在全局变量里注册好事件监听，原生通过触发事件，把处理结果返回给dapp。demo里使用了第三方库eventproxy来注册监听事件，通过让原生调用js的全局方法触发事件。
+我们提供了dapp端的工具类`CyanoBridge`，负责包装dapi请求，并通过`window.postMessage`的方式发送给Provider（原生应用）。我们也会提供原生应用端Provider的sdk，用于接收和处理请求，并将结果通过`window.postMessage` 的形式发送给dapp端。`CyanoBridge`可以用来监听`message`事件，接收到Provider返回的响应。
 
 ## API说明
 
-### 1. getAccount (getIdentity同理)
+### 1. 注册`CyanoBridge`的实例
+
+将CyanoBridge实例注册到Vue.prototype上，这样在项目里可以使用`this.cyanoBridge`来方便调用其api。
+相关代码在`src/main.js`
+
+```
+var cyanoBridge = new mdApi.CyanoBridge()
+Vue.prototype.cyanoBridge = cyanoBridge;
+```
+
+### 2. getAccount (getIdentity同理)
 
 相关代码在`src/components/login.vue` 
 
@@ -60,19 +57,29 @@ For a detailed explanation on how things work, check out the [guide](http://vuej
 
 ```
 handleGetAccount() {
-            const req = {
-                action: 'getAccount',
-                version: 'v1.0.0',
-                params: {
-                    dappName: 'my dapp',
-                    dappIcon: 'some url of dapp icon'
-                }
+            const params = {
+                dappName: 'dapp name',
+                dappIcon: 'dapp icon'
             }
-            const msg = btoa(encodeURIComponent(JSON.stringify(req))); 
-            const uri = 'ontprovider://ont.io?params='+msg;
-            this.status = 'Getting account...'
-            window.prompt(uri);
+            this.cyanoBridge.getAccount();
         },
+```
+
+#### 注册事件回调
+
+我们在`mounted`这个组件生命周期里注册事件回调，用来处理响应。
+
+```
+mounted() {
+    const handler = (res) => {
+        if(res.action === 'getAccount') {
+            this.handleGetAccountReturn(res)
+        } else if(res.action === 'login') {
+            this.handleLoginReturn(res)
+        }
+    }
+    this.cyanoBridge.onMessage(handler);
+},
 ```
 
 #### 接收getAccount返回
@@ -92,37 +99,22 @@ handleGetAccountReturn(res) {
 
 
 
-### 2. login
+### 3. login
 
 #### 发送login消息
 
 ```
  handleLogin() {
-            const req = {
-                action: 'login',
-                version: 'v1.0.0',
-                params: {
-                    type: 'account',
-                    dappName: 'My dapp',
-                    dappIcon: 'some url of the dapp icon',
-                    message: 'test message',
-                    expired: new Date().getTime(),
-                    callback: ''
-                }
-            }
-            const msg = btoa(encodeURIComponent(JSON.stringify(req))); 
-            /**
-             * 我们构造好的消息，加上我们约定协议'ontprovider://ont.io?'后就可以发送给原生客户端
-             * 发送的方式我们不限制，只要原生能够拦截处理即可。比如
-             * 1. window.location.href = uri
-             * 2. window.postMessage
-             * 3. window.prompt
-             * 这里我们以window.prompt为例。
-             */
-            const uri = 'ontprovider://ont.io?params='+msg;
-            this.status = 'Loading...'
-            window.prompt(uri);
-        },
+    const  params = {
+            type: 'account',
+            dappName: 'My dapp',
+            dappIcon: 'some url of the dapp icon',
+            message: 'test message',
+            expired: new Date().getTime(),
+            callback: ''
+        }
+    this.cyanoBridge.login(params);
+},
 ```
 
 #### 接收login返回消息
@@ -154,40 +146,59 @@ handleLoginReturn(res) {
 
 
 
-### 3. invoke smart contract
+### 4. invoke smart contract
 
 #### 发送invoke sc消息
 
 ```
 invokeSc() {
-      const address = sessionStorage.getItem('address')
-      const params = {
-        "action": "invoke",
-        "params": {
+      const scriptHash = 'cd948340ffcf11d4f5494140c93885583110f3e9';
+      const operation = 'transferNativeAsset';
+      const args = [{
+          "name": "arg0",
+          type: 'String',
+          "value": "ont"
+        }, {
+          "name": "arg1",
+          type: 'Address',
+          "value": address
+        }, {
+          "name": "arg2",
+          type: 'Address',
+          "value": "AecaeSEBkt5GcBCxwz1F41TvdjX3dnKBkJ"
+        }, {
+          "name": "arg3",
+          type: 'Integer',
+          "value": 10
+        }]
+        const gasPrice = 500;
+        const gasLimit = 20000;
+        const payer = address;
+        const config = {
           "login": true,
           "message": "invoke smart contract test",
-          "invokeConfig": {
-            "contractHash": "cd948340ffcf11d4f5494140c93885583110f3e9",
-            "functions": JSON.parse(this.functions),
-            "gasLimit": 20000,
-            "gasPrice": 500,
-            "payer": address
-          }
+          "url": ""
         }
-      }
-      console.log(JSON.stringify(params))
-      const msg = btoa(encodeURIComponent(JSON.stringify(params))); 
-      const uri = 'ontprovider://ont.io?params='+msg;
-      window.prompt(uri)
+        this.cyanoBridge.invoke(scriptHash, operation, args, gasPrice, gasLimit, payer, config);
     },
 ```
 
-#### 接收invoke sc返回消息
+#### 注册回调和处理返回
 
 ```
-handleMessage(message) {
+ mounted() {
+    const handler = (res) => {
+            this.handleInvokeResponse(res);
+        }
+    this.cyanoBridge.onMessage(handler);
+  },
+```
+
+```
+handleInvokeResponse(res) {
       // dapp logic here
-      console.log('get handled message: '+ JSON.stringify(message))
+      this.invokeRes = JSON.stringify(res);
+      console.log('get handled message: '+ JSON.stringify(res))
     }
 ```
 

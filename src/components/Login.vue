@@ -37,6 +37,7 @@ export default {
         // })
 
         const handler = (res) => {
+            console.log('native sent: ' + JSON.stringify(res))
             if(res.action === 'getAccount') {
                 this.handleGetAccountReturn(res)
             } else if(res.action === 'login') {
@@ -81,7 +82,7 @@ export default {
                     expired: new Date().getTime(),
                     callback: ''
                 }
-            const uri =this.cyanoBridge.login(params);
+            this.cyanoBridge.login(params);
             this.status = 'Loading...'
             // window.prompt(uri);
         },
@@ -124,7 +125,7 @@ export default {
                 dappName: 'dapp name',
                 dappIcon: 'dapp icon'
             }
-            const uri = this.cyanoBridge.getAccount();
+            this.cyanoBridge.getAccount();
             this.status = 'Getting account...'
             // window.prompt(uri);
         },
