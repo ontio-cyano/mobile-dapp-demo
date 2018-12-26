@@ -1,6 +1,6 @@
 <template>
     <div>
-        <p> This is Login Page </p>
+        <p> This is Login Page new </p>
         <p>{{status}}</p>
         <button @click="handleLogin">Login by signed message</button>
         <br>
@@ -21,59 +21,9 @@ export default {
     },
     mounted() {
 
-        // register login callback
-        /**
-         * 在组件加载完后注册事件监听。我们约定发送的消息是经过转字符串 --》encodeURIComponent --》转base64处理的，
-         * 在接收消息时都要做同样的相反的处理。
-         */
-        // this.ep.on('OntMessage', (message) => {
-        //     console.log('handle login: ' + message)
-        //     const res = JSON.parse(decodeURIComponent(atob(message)));
-        //     if(res.action === 'getAccount') {
-        //         this.handleGetAccountReturn(res)
-        //     } else if(res.action === 'login') {
-        //         this.handleLoginReturn(res)
-        //     }
-        // })
-
-        const handler = (res) => {
-            console.log('native sent: ' + JSON.stringify(res))
-            if(res.action === 'getAccount') {
-                this.handleGetAccountReturn(res)
-            } else if(res.action === 'login') {
-                this.handleLoginReturn(res)
-            }
-        }
-        this.cyanoBridge.onMessage(handler);
-        //
-        // this.ee.on('OntMessage', (message) => {})
     },
     methods: {
-        handleLogin() {
-            // const req = {
-            //     action: 'login',
-            //     version: 'v1.0.0',
-            //     params: {
-            //         type: 'account',
-            //         dappName: 'My dapp',
-            //         dappIcon: 'some url of the dapp icon',
-            //         message: 'test message',
-            //         expired: new Date().getTime(),
-            //         callback: ''
-            //     }
-            // }
-            // const msg = btoa(encodeURIComponent(JSON.stringify(req))); 
-            // /**
-            //  * 我们构造好的消息，加上我们约定协议'ontprovider://ont.io?'后就可以发送给原生客户端
-            //  * 发送的方式我们不限制，只要原生能够拦截处理即可。比如
-            //  * 1. window.location.href = uri
-            //  * 2. window.postMessage
-            //  * 3. window.prompt
-            //  * 这里我们以window.prompt为例。
-            //  */
-            // const uri = 'ontprovider://ont.io?params='+msg;
-            // this.status = 'Loading...'
-            // window.prompt(uri);
+        async handleLogin() {
             const  params = {
                     type: 'account',
                     dappName: 'My dapp',
@@ -82,9 +32,14 @@ export default {
                     expired: new Date().getTime(),
                     callback: ''
                 }
-            this.cyanoBridge.login(params);
-            this.status = 'Loading...'
-            // window.prompt(uri);
+            try {
+                const res = await this.cyanoBridge.login(params);
+                this.status = 'Loading...'
+                this.handleLoginReturn(res);
+            } catch(err) {
+                console.log(err)
+                alert(err)
+            }
         },
         handleLoginReturn(res) {
             console.log('in handling login'+ JSON.stringify(res));
@@ -108,26 +63,19 @@ export default {
                 console.log(res.result)
             }
         },
-        handleGetAccount() {
-            // const req = {
-            //     action: 'getAccount',
-            //     version: 'v1.0.0',
-            //     params: {
-            //         dappName: 'my dapp',
-            //         dappIcon: 'some url of dapp icon'
-            //     }
-            // }
-            // const msg = btoa(encodeURIComponent(JSON.stringify(req))); 
-            // const uri = 'ontprovider://ont.io?params='+msg;
-            // this.status = 'Getting account...'
-            // window.prompt(uri);
+        async handleGetAccount() {
             const params = {
                 dappName: 'dapp name',
                 dappIcon: 'dapp icon'
             }
-            this.cyanoBridge.getAccount();
-            this.status = 'Getting account...'
-            // window.prompt(uri);
+            try{
+                const res = await this.cyanoBridge.getAccount();
+                this.status = 'Getting account...'
+                this.handleGetAccountReturn(res);
+            }catch(err) {
+                console.log(err)
+                 alert(err)
+            } 
         },
         handleGetAccountReturn(res) {
             console.log('in handling login'+ JSON.stringify(res));

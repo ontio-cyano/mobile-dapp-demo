@@ -44,20 +44,10 @@ export default {
     }
   },
   mounted() {
-    //add event listener to receive message from native client
-    // this.ep.on('OntMessage', (message) => {
-    //   console.log('native sent: ' + message);
-    //   const res = JSON.parse(decodeURIComponent(atob(message)));
-    //   this.handleMessage(res)
-    // })
-    const handler = (res) => {
-      console.log('native sent: ' + JSON.stringify(res))
-            this.handleInvokeResponse(res);
-        }
-    this.cyanoBridge.onMessage(handler);
+ 
   },
   methods: {
-    invokeSc() {
+    async invokeSc() {
       const address = sessionStorage.getItem('address')
       const params = {
         "action": "invoke",
@@ -78,7 +68,7 @@ export default {
       const args = [{
           "name": "arg0",
           type: 'String',
-          "value": "ont"
+          "value": "ong"
         }, {
           "name": "arg1",
           type: 'Address',
@@ -90,7 +80,7 @@ export default {
         }, {
           "name": "arg3",
           type: 'Integer',
-          "value": 10
+          "value": 1
         }]
         const gasPrice = 500;
         const gasLimit = 20000;
@@ -100,11 +90,13 @@ export default {
           "message": "invoke smart contract test",
           "url": ""
         }
-        this.cyanoBridge.invoke(scriptHash, operation, args, gasPrice, gasLimit, payer, config);
-      // console.log(JSON.stringify(params))
-      // const msg = btoa(encodeURIComponent(JSON.stringify(params))); 
-      // const uri = 'ontprovider://ont.io?params='+msg;
-      // window.prompt(uri)
+        try{
+          const res = await this.cyanoBridge.invoke(scriptHash, operation, args, gasPrice, gasLimit, payer, config);
+          console.log('dapp receive: ' + JSON.stringify(res));
+          this.handleInvokeResponse(res);
+        }catch(err) {
+          console.log(err);
+        }
     },
     handleInvokeResponse(res) {
       // dapp logic here
