@@ -72,7 +72,6 @@ export default {
                 dappIcon: 'dapp icon'
             }
             try{
-                // const res = await this.cyanoBridge.getAccount();
                 const res = await client.api.asset.getAccount(params);
                 this.status = 'Getting account...'
                 this.handleGetAccountReturn(res);

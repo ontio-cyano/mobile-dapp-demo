@@ -32,21 +32,21 @@ For a detailed explanation on how things work, check out the [guide](http://vuej
 
 ## API说明
 
-### 1. 注册`CyanoBridge`的实例
+### 1. 注册`CyanoBridge`的client
 
-将CyanoBridge实例注册到Vue.prototype上，这样在项目里可以使用`this.cyanoBridge`来方便调用其api。
+必须在程序初始的地方初始化client。
 相关代码在`src/main.js`
 
 ```
-var cyanoBridge = new CyanoMobile.CyanoBridge()
-Vue.prototype.cyanoBridge = cyanoBridge;
+import { client } from 'cyanobridge'
+
+client.registerClient();
 ```
 
 ### 2. getAccount (getIdentity同理)
 
 相关代码在`src/components/login.vue` 
 
-#### 发送消息getAccount
 
 ```
 async handleGetAccount() {
@@ -55,7 +55,7 @@ async handleGetAccount() {
                 dappIcon: 'dapp icon'
             }
             try{
-                const res = await this.cyanoBridge.getAccount();
+                const res = await client.api.asset.getAccount(params);
                 this.status = 'Getting account...'
                 this.handleGetAccountReturn(res);
             }catch(err) {
@@ -68,8 +68,7 @@ async handleGetAccount() {
 
 ### 3. login
 
-#### 发送login消息
-
+相关代码在`src/components/login.vue` 
 ```
 async handleLogin() {
             const  params = {
@@ -81,7 +80,7 @@ async handleLogin() {
                     callback: ''
                 }
             try {
-                const res = await this.cyanoBridge.login(params);
+                const res = await client.api.message.login(params);
                 this.status = 'Loading...'
                 this.handleLoginReturn(res);
             } catch(err) {
@@ -94,25 +93,11 @@ async handleLogin() {
 
 ### 4. invoke smart contract
 
-#### 发送invoke sc消息
+相关代码在`src/components/helloworld.vue` 
 
 ```
   async invokeSc() {
       const address = sessionStorage.getItem('address')
-      const params = {
-        "action": "invoke",
-        "params": {
-          "login": true,
-          "message": "invoke smart contract test",
-          "invokeConfig": {
-            "contractHash": "cd948340ffcf11d4f5494140c93885583110f3e9",
-            "functions": JSON.parse(this.functions),
-            "gasLimit": 20000,
-            "gasPrice": 500,
-            "payer": address
-          }
-        }
-      }
       const scriptHash = 'cd948340ffcf11d4f5494140c93885583110f3e9';
       const operation = 'transferNativeAsset';
       const args = [{
@@ -140,12 +125,58 @@ async handleLogin() {
           "message": "invoke smart contract test",
           "url": ""
         }
+        const params = {
+          scriptHash,
+          operation,
+          args,
+          gasPrice,
+          gasLimit,
+          payer,
+          config
+        }
         try{
-          const res = await this.cyanoBridge.invoke(scriptHash, operation, args, gasPrice, gasLimit, payer, config);
+          const res = await client.api.smartContract.invoke(params);
           console.log('dapp receive: ' + JSON.stringify(res));
           this.handleInvokeResponse(res);
         }catch(err) {
           console.log(err);
         }
     },
+```
+### 5. invokeRead smart contract
+
+预执行合约方法。一般用来查询合约数据
+
+```
+  async invokeRead() {
+      const scriptHash = 'b5a1f2cd4e27b7453111a2f5eb737714ead8fded';
+      const operation = 'balanceOf';
+      const args = [{
+          "name": "account",
+          "type" : 'Address',
+          "value": "AQf4Mzu1YJrhz9f3aRkkwSm9n3qhXGSh4p"
+        }]
+        const gasPrice = 500;
+        const gasLimit = 20000;
+        const config = {
+          "login": true,
+          "message": "invoke read smart contract test",
+          "url": ""
+        }
+        const params = {
+          scriptHash,
+          operation,
+          args,
+          gasPrice,
+          gasLimit,
+          config
+        }
+        try{
+          const res = await client.api.smartContract.invokeRead(params);
+          console.log('dapp receive: ' + JSON.stringify(res));
+          this.invokeReadRes = JSON.stringify(res);
+        }catch(err) {
+          console.log('err:' + JSON.stringify(err));
+        }
+    }
 ```

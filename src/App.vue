@@ -25,6 +25,9 @@ export default {
 }
 p {
   margin:0;
+  white-space: normal;
+  word-break: break-word;
+  word-wrap: break-word;
 }
 button {
   border: 1px solid green;
