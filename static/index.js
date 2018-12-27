@@ -1,4 +1,4 @@
-var CyanoMobile =
+module.exports =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -82,7 +82,7 @@ var CyanoMobile =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/index.ts");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -262,7 +262,7 @@ class CyanoBridge {
     sendMessage(msg) {
         window.postMessage(msg, '*');
     }
-    handleMessageEvent(resolve, reject, action, needTimeout = true) {
+    handleMessageEvent(resolve, reject, action, needTimeout = false) {
         const handler = event => {
             const message = event.data;
             if (!message) {
@@ -591,19 +591,7 @@ function makeInvokeFunction(operation, args) {
     return obj;
 }
 
-/***/ }),
-
-/***/ 0:
-/*!****************************!*\
-  !*** multi ./src/index.ts ***!
-  \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(/*! ./src/index.ts */"./src/index.ts");
-
-
 /***/ })
 
 /******/ });
-//# sourceMappingURL=browser.js.map
+//# sourceMappingURL=index.js.map

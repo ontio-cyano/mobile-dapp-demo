@@ -1688,9 +1688,9 @@ currently-unhandled@^0.4.1:
   dependencies:
     array-find-index "^1.0.1"
 
-cyanobridge@^0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/cyanobridge/-/cyanobridge-0.0.1.tgz#5975e10b13d2b549574d20f2d8e14aaa3c719ae4"
+cyanobridge@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/cyanobridge/-/cyanobridge-0.0.3.tgz#40ecd0703d01d383e0fe00fc5831dd7a3e0f410f"
   dependencies:
     mocha "^5.2.0"
 

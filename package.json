@@ -10,7 +10,7 @@
     "build": "node build/build.js"
   },
   "dependencies": {
-    "cyanobridge": "^0.0.1",
+    "cyanobridge": "^0.0.3",
     "eventproxy": "^1.0.0",
     "ontology-ts-sdk": "^1.0.9",
     "vue": "^2.5.2",

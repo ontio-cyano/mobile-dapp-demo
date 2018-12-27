@@ -5,17 +5,6 @@
   </div>
 </template>
 <script>
-// import {utils} from 'ontology-ts-sdk'
-
-// var EventEmitter = new utils.EventEmitter();
-// EventEmitter.on('login_callback', (message) => {
-//   console.log(message)
-// })
-
-// EventEmitter.on('scInvoke_callback', (message) => {
-//   console.log(message)
-// })
-
 
 export default {
   name: 'App'
@@ -29,6 +18,17 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 10px;
+}
+ img {
+  width: 100px;
+}
+p {
+  margin:0;
+}
+button {
+  border: 1px solid green;
+  background:#ffffff;
+  padding: 5px 10px;
 }
 </style>

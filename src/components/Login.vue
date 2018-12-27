@@ -12,6 +12,9 @@
 <script>
 // const Ont = require('ontology-ts-sdk')
 import {Crypto, utils} from 'ontology-ts-sdk'
+// const client = require('../../static/index').client;
+import { client } from 'cyanobridge'
+
 export default {
     name: 'Login',
     data() {
@@ -33,7 +36,7 @@ export default {
                     callback: ''
                 }
             try {
-                const res = await this.cyanoBridge.login(params);
+                const res = await client.api.message.login(params);
                 this.status = 'Loading...'
                 this.handleLoginReturn(res);
             } catch(err) {
@@ -69,7 +72,8 @@ export default {
                 dappIcon: 'dapp icon'
             }
             try{
-                const res = await this.cyanoBridge.getAccount();
+                // const res = await this.cyanoBridge.getAccount();
+                const res = await client.api.asset.getAccount(params);
                 this.status = 'Getting account...'
                 this.handleGetAccountReturn(res);
             }catch(err) {
