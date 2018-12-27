@@ -46,7 +46,7 @@ export default {
         }, {
           "name": "arg1",
           type: 'Address',
-          "value": address
+          "value": ${address}
         }, {
           "name": "arg2",
           type: 'Address',
