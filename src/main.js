@@ -4,9 +4,9 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 // import CyanoBridge from 'cyanobridge'
-import { client } from 'cyanobridge'
-// const client = require('../static/index').client;
-client.registerClient();
+// import { client } from 'cyanobridge'
+const client = require('../static/index').client;
+// client.registerClient();
 
 // 注册全局变量 cyanoBridge
 // var cyanoBridge = new CyanoMobile.CyanoBridge();

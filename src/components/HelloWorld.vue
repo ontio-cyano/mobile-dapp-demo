@@ -1,6 +1,5 @@
 <template>
   <div class="hello">
-    <h1>{{ msg }}</h1>
       <p class="label">已登录账户: {{address}}</p>
     <div class="border">
       <!-- invoke -->
@@ -9,11 +8,19 @@
           <p> <span class="label"> Operation:  </span> transferNativeAsset</p>
           <p class="label"> Params: </p>
           <textarea name="" id="" cols="50" rows="10" v-model="functions"></textarea>
-     
+          <div>
+            <label for="" class="label">Transfer amount</label> 
+            <input type="text" v-model="amount" @change="handleChangeAmount">
+          </div>
         </div>
-        <button @click="invokeSc">Invoke SC</button>
+        <div>
+          <input type="checkbox" v-model="auto" @change="handleChangeAuto" style="font-size:20px;">
+          <label for="">Automatically invoke sc in every 3 seconds</label>
+        </div>
+        <button @click="handleInvokeSc" :disabled="auto">Invoke SC</button>
         <p> <span class="label">Result: </span> {{invokeRes}}</p>
     </div>
+
     <!-- invokeRead -->
     <div class="border">
       <div>
@@ -23,7 +30,7 @@
           <textarea name="" id="" cols="50" rows="10" v-model="invokeReadFunctions"></textarea>
      
         </div>
-        <button @click="invokeRead">InvokeRead SC</button>
+        <button @click="handleInvokeRead">InvokeRead SC</button>
         <p><span class="label">Result: </span> {{invokeReadRes}}</p>
     </div>
       
@@ -31,31 +38,17 @@
 </template>
 
 <script>
-// const client = require('../../static/index').client;
-import { client } from 'cyanobridge'
+const client = require('../../static/index').client;
+// import { client } from 'cyanobridge'
 
 export default {
   name: 'HelloWorld',
   data () {
   const address = sessionStorage.getItem('address')
     return {
-      functions: `[{
-          "name": "arg0",
-          type: 'String',
-          "value": "ong"
-        }, {
-          "name": "arg1",
-          type: 'Address',
-          "value": ${address}
-        }, {
-          "name": "arg2",
-          type: 'Address',
-          "value": "AecaeSEBkt5GcBCxwz1F41TvdjX3dnKBkJ"
-        }, {
-          "name": "arg3",
-          type: 'Integer',
-          "value": 1
-        }]`,
+      address,
+      amount: 1,
+      functions: '',
       msg: 'Hello world',
       address,
       invokeRes: '',
@@ -65,16 +58,40 @@ export default {
           "type" : 'Address',
           "value": "AQf4Mzu1YJrhz9f3aRkkwSm9n3qhXGSh4p"
         }]`,
-    invokeReadRes: ''
+    invokeReadRes: '',
+    auto: false
 
     }
   },
   mounted() {
- 
+      this.handleInvokeScParams();
   },
   methods: {
-    async invokeSc() {
-      const address = sessionStorage.getItem('address')
+    handleInvokeScParams() {
+      const amount = this.amont*1e9; // ONG has decimal 1e9
+      this.functions = `[{
+          "name": "arg0",
+          type: 'String',
+          "value": "ong"
+        }, {
+          "name": "arg1",
+          type: 'Address',
+          "value": ${this.address}
+        }, {
+          "name": "arg2",
+          type: 'Address',
+          "value": "AecaeSEBkt5GcBCxwz1F41TvdjX3dnKBkJ"
+        }, {
+          "name": "arg3",
+          type: 'Integer',
+          "value": ${amount}
+        }]`
+    },
+    handleChangeAmount() {
+      this.handleInvokeScParams();
+    },
+    async handleInvokeSc() {
+      const amount = this.amount*1e9; // ONG has decimal 1e9
       const scriptHash = 'cd948340ffcf11d4f5494140c93885583110f3e9';
       const operation = 'transferNativeAsset';
       const args = [{
@@ -84,7 +101,7 @@ export default {
         }, {
           "name": "arg1",
           type: 'Address',
-          "value": address
+          "value": this.address
         }, {
           "name": "arg2",
           type: 'Address',
@@ -92,11 +109,11 @@ export default {
         }, {
           "name": "arg3",
           type: 'Integer',
-          "value": 1
+          "value": amount
         }]
         const gasPrice = 500;
         const gasLimit = 20000;
-        const payer = address;
+        const payer = this.address;
         const config = {
           "login": true,
           "message": "invoke smart contract test",
@@ -111,13 +128,46 @@ export default {
           payer,
           config
         }
-        try{
-          const res = await client.api.smartContract.invoke(params);
-          console.log('dapp receive: ' + JSON.stringify(res));
-          this.handleInvokeResponse(res);
-        }catch(err) {
-          console.log(err);
+        
+        // handle invoke sc 
+        if(this.auto) {
+          const res = await this.invokePasswordFree(params);
+          console.log('first res: ' + JSON.stringify(res))
+          // 第一次invokePasswordFree，成功后定时发送交易
+          if (res && res.error === 0) {
+            this.invokeInterval = setInterval( async ()=> {
+              const res = await this.invokePasswordFree(params)
+              console.log('afterwords res: ' + JSON.stringify(res))
+              // 后续invokePasswordFree, 取消定时发送交易
+              if (!res || res.error !== 0) {
+                clearInterval(this.invokeInterval)
+                return;
+              }
+            }, 30000)
+          }
+          
+        } else {
+          this.invokeSc(params);
         }
+    },
+    async invokeSc(params) {
+      try{
+            const res = await client.api.smartContract.invoke(params);
+            console.log('dapp receive: ' + JSON.stringify(res));
+            this.handleInvokeResponse(res);
+          }catch(err) {
+            console.log(JSON.stringify(err));
+          }
+    },
+    async invokePasswordFree(params) {
+      try{
+        const res = await client.api.smartContract.invokePasswordFree(params);
+        console.log('dapp receive: ' + JSON.stringify(res));
+        this.handleInvokeResponse(res);
+        return res;
+      }catch(err) {
+        console.log(JSON.stringify(err));
+      }
     },
     handleInvokeResponse(res) {
       // dapp logic here
@@ -125,7 +175,7 @@ export default {
       console.log('get handled message: '+ JSON.stringify(res))
     },
 
-    async invokeRead() {
+    async handleInvokeRead() {
       const scriptHash = 'b5a1f2cd4e27b7453111a2f5eb737714ead8fded';
       const operation = 'balanceOf';
       const args = [{
@@ -155,6 +205,15 @@ export default {
         }catch(err) {
           console.log('err:' + JSON.stringify(err));
         }
+    },
+
+    handleChangeAuto() {
+      if(!this.auto) {
+        clearInterval(this.invokeInterval);
+      }
+      if(this.auto) {
+        this.handleInvokeSc();
+      }
     }
   }
 }
@@ -196,5 +255,10 @@ a {
   width: 90%;
   margin: 10px auto;
 }
+}
+
+button:disabled {
+  background:#dddddd;
+  cursor:not-allowed;
 }
 </style>

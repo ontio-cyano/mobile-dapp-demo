@@ -12,9 +12,9 @@
 <script>
 // const Ont = require('ontology-ts-sdk')
 import {Crypto, utils} from 'ontology-ts-sdk'
-// const client = require('../../static/index').client;
-import { client } from 'cyanobridge'
-
+const client = require('../../static/index').client;
+// import { client } from 'cyanobridge'
+client.registerClient();
 export default {
     name: 'Login',
     data() {
