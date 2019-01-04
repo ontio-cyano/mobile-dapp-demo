@@ -161,6 +161,13 @@ export default {
     },
     async invokePasswordFree(params) {
       try{
+        const accountRes = await client.api.asset.getAccount();
+        console.log('getAccount before invoke: ' + JSON.stringify(accountRes))
+        if(!accountRes.result) {
+          alert('Invoke getAccount failed')
+          return;
+        }
+
         const res = await client.api.smartContract.invokePasswordFree(params);
         console.log('dapp receive: ' + JSON.stringify(res));
         this.handleInvokeResponse(res);

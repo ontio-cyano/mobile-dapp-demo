@@ -96,147 +96,26 @@ module.exports =
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils */ "./src/utils.ts");
+/* harmony import */ var uuid__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! uuid */ "uuid");
+/* harmony import */ var uuid__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(uuid__WEBPACK_IMPORTED_MODULE_0__);
 
 class CyanoBridge {
     constructor(timeout) {
         this.timeout = 3000;
         this.version = 'v1.0.0';
+        this.handlers = {};
         if (timeout) {
             this.timeout = timeout;
         }
     }
-    // tslint:disable:jsdoc-format
-    /**
-     * Return the uri to get account from provider
-     * @params {object} params
-     * {
-         "dappName": string, // dApp name
-         "dappIcon": string // url that points to the icon of the dapp
-        }
-     */
-    getAccount(params) {
-        return new Promise((resolve, reject) => {
-            const req = {
-                action: 'getAccount',
-                version: this.version,
-                params
-            };
-            const msg = btoa(encodeURIComponent(JSON.stringify(req)));
-            const uri = 'ontprovider://ont.io?params=' + msg;
-            this.sendMessage(uri);
-            this.handleMessageEvent(resolve, reject, 'getAccount', true);
-        });
-    }
-    /**
-     * Return the uri to get identity from provider
-     * @params {object} params
-     * {
-         "dappName": string, // dApp name
-         "dappIcon": string // url that points to the icon of the dapp
-        }
-     */
-    getIdentity(params) {
-        return new Promise((resolve, reject) => {
-            const req = {
-                action: 'getIdentity',
-                version: this.version,
-                params
-            };
-            const msg = btoa(encodeURIComponent(JSON.stringify(req)));
-            const uri = 'ontprovider://ont.io?params=' + msg;
-            this.sendMessage(uri);
-            this.handleMessageEvent(resolve, reject, 'getIdentity', true);
-        });
-    }
-    /**
-     * We define the login process is: dapp will send a message to native client,
-     * native client will sign the message with
-     * user's private key and send back,dapp will verify the signature to decide if login or not.
-     * @params params
-     * params: {
-         type: 'account',// account or identity that will sign the message
-         dappName: 'My dapp', // dapp's name
-         dappIcon: 'http://mydapp.com/icon.png', // some url that points to the dapp's icon
-         message: 'test message', // message sent from dapp that will be signed by native client
-         expired: new Date('2019-01-01').getTime(), // expired date of login
-         callback: '' // callback url of dapp
-     }
-     */
-    login(params) {
-        if (!params.message || typeof params.message !== 'string') {
-            throw new Error('Parameter for login must contain a message.');
-        }
-        if (!params.type) {
-            params.type = 'account';
-        }
-        return new Promise((resolve, reject) => {
-            const req = {
-                action: 'login',
-                version: this.version,
-                params
-            };
-            const msg = btoa(encodeURIComponent(JSON.stringify(req)));
-            const uri = 'ontprovider://ont.io?params=' + msg;
-            this.sendMessage(uri);
-            this.handleMessageEvent(resolve, reject, 'login', false);
-        });
-    }
-    /**
-     * Invoke smart contract that needs wallet signature.
-     * @param {string} scriptHash Scripthash of smart contract
-     * @param {string} operation  Method to invoke
-     * @param {[Parameter]} args
-     * @param {number} gasPrice
-     * @param {number} gasLimit
-     * @param {JSON object} config optional configs
-     * config: {
-     *  login: bool // logined or not
-     *  message: string // message to show in native client,
-     *  url: string // callback url to get signed transaction
-     * }
-     */
-    invoke(scriptHash, operation, args, gasPrice = 500, gasLimit = 200000, payer, config = {
-        login: true,
-        message: '',
-        url: ''
-    }) {
-        if (!scriptHash || !operation || !args || args.length === 0) {
-            throw new Error('Invalid params.');
-        }
-        if (!payer) {
-            throw new Error('No payer.');
-        }
-        return new Promise((resolve, reject) => {
-            const functionParams = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["makeInvokeFunction"])(operation, args);
-            const req = {
-                action: 'invoke',
-                version: this.version,
-                params: {
-                    login: config.login,
-                    url: config.url,
-                    message: config.message,
-                    invokeConfig: {
-                        contractHash: scriptHash,
-                        functions: [functionParams],
-                        payer,
-                        gasLimit,
-                        gasPrice
-                    }
-                }
-            };
-            const msg = btoa(encodeURIComponent(JSON.stringify(req)));
-            const uri = 'ontprovider://ont.io?params=' + msg;
-            this.sendMessage(uri);
-            this.handleMessageEvent(resolve, reject, 'invoke', false);
-        });
-    }
     call(req) {
+        const id = uuid__WEBPACK_IMPORTED_MODULE_0__();
+        req.id = id;
         return new Promise((resolve, reject) => {
             const msg = btoa(encodeURIComponent(JSON.stringify(req)));
             const uri = 'ontprovider://ont.io?params=' + msg;
             this.sendMessage(uri);
-            this.handleMessageEvent(resolve, reject, req.action, req.needTimeout);
+            this.handleMessageEvent(id, resolve, reject, req.action, req.needTimeout);
         });
     }
     invokeRead() {
@@ -262,22 +141,35 @@ class CyanoBridge {
     sendMessage(msg) {
         window.postMessage(msg, '*');
     }
-    handleMessageEvent(resolve, reject, action, needTimeout = false) {
-        const handler = event => {
+    handleMessageEvent(id, resolve, reject, action, needTimeout = false) {
+        const that = this;
+        // tslint:disable-next-line:only-arrow-functions
+        const handler = function (event) {
             const message = event.data;
-            console.log('received: ' + message)
             if (!message) {
-                reject(message);
+                reject(event);
             }
-            document.removeEventListener('message', handler);
-            const res = this.parseMessage(message);
+            const res = that.parseMessage(message);
+            if (!res.id) {
+                reject('No message id');
+            }
+            if (!that.handlers[res.id]) {
+                reject('No message handler');
+            }
+            if (res.id !== handler.id) {
+                return;
+            }
+            document.removeEventListener('message', that.handlers[res.id]);
+            delete that.handlers[res.id];
             if (res.action === action) {
                 resolve(res);
             } else {
                 reject(res);
             }
         };
-        document.addEventListener('message', handler);
+        handler.id = id;
+        this.handlers[id] = handler;
+        document.addEventListener('message', this.handlers[id]);
         if (needTimeout) {
             setTimeout(() => {
                 reject('Time out');
@@ -302,6 +194,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _proxy__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./proxy */ "./src/client/proxy.ts");
 
 const assetApi = {
+    getAccountReq(params) {
+        const req = {
+            action: 'getAccount',
+            version: _proxy__WEBPACK_IMPORTED_MODULE_0__["version"],
+            params,
+            needTimeout: true
+        };
+        return JSON.stringify(req);
+    },
     getAccount(params) {
         const req = {
             action: 'getAccount',
@@ -328,6 +229,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _proxy__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./proxy */ "./src/client/proxy.ts");
 
 const identityApi = {
+    getIdentityReq(params) {
+        const req = {
+            action: 'getIdentity',
+            version: _proxy__WEBPACK_IMPORTED_MODULE_0__["version"],
+            params,
+            needTimeout: true
+        };
+        return JSON.stringify(req);
+    },
     getIdentity(params) {
         const req = {
             action: 'getIdentity',
@@ -354,9 +264,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _asset__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./asset */ "./src/client/asset.ts");
 /* harmony import */ var _identity__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./identity */ "./src/client/identity.ts");
 /* harmony import */ var _message__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./message */ "./src/client/message.ts");
-/* harmony import */ var _smartcontract__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./smartcontract */ "./src/client/smartcontract.ts");
-/* harmony import */ var _proxy__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./proxy */ "./src/client/proxy.ts");
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "registerClient", function() { return _proxy__WEBPACK_IMPORTED_MODULE_4__["registerClient"]; });
+/* harmony import */ var _qrcode__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./qrcode */ "./src/client/qrcode.ts");
+/* harmony import */ var _smartcontract__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./smartcontract */ "./src/client/smartcontract.ts");
+/* harmony import */ var _proxy__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./proxy */ "./src/client/proxy.ts");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "registerClient", function() { return _proxy__WEBPACK_IMPORTED_MODULE_5__["registerClient"]; });
+
 
 
 
@@ -367,7 +279,8 @@ const api = {
     asset: _asset__WEBPACK_IMPORTED_MODULE_0__["assetApi"],
     identity: _identity__WEBPACK_IMPORTED_MODULE_1__["identityApi"],
     message: _message__WEBPACK_IMPORTED_MODULE_2__["messageApi"],
-    smartContract: _smartcontract__WEBPACK_IMPORTED_MODULE_3__["scApi"]
+    smartContract: _smartcontract__WEBPACK_IMPORTED_MODULE_4__["scApi"],
+    qrcode: _qrcode__WEBPACK_IMPORTED_MODULE_3__["qrcodeApi"]
 };
 
 
@@ -395,6 +308,15 @@ const messageApi = {
         };
         return Object(_proxy__WEBPACK_IMPORTED_MODULE_0__["call"])(req);
     },
+    signMessageReq(params) {
+        const req = {
+            action: 'login',
+            version: _proxy__WEBPACK_IMPORTED_MODULE_0__["version"],
+            params,
+            needTimeout: false
+        };
+        return JSON.stringify(req);
+    },
     login(params) {
         if (!params.message || typeof params.message !== 'string') {
             throw new Error('Parameter for login must contain a message.');
@@ -409,6 +331,21 @@ const messageApi = {
             needTimeout: false
         };
         return Object(_proxy__WEBPACK_IMPORTED_MODULE_0__["call"])(req);
+    },
+    loginReq(params) {
+        if (!params.message || typeof params.message !== 'string') {
+            throw new Error('Parameter for login must contain a message.');
+        }
+        if (!params.type) {
+            params.type = 'account';
+        }
+        const req = {
+            action: 'login',
+            version: _proxy__WEBPACK_IMPORTED_MODULE_0__["version"],
+            params,
+            needTimeout: false
+        };
+        return JSON.stringify(req);
     }
 };
 
@@ -436,6 +373,35 @@ async function call(request) {
     return cb.call(request);
 }
 const version = '1.0.0';
+
+/***/ }),
+
+/***/ "./src/client/qrcode.ts":
+/*!******************************!*\
+  !*** ./src/client/qrcode.ts ***!
+  \******************************/
+/*! exports provided: qrcodeApi */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "qrcodeApi", function() { return qrcodeApi; });
+/* harmony import */ var _asset__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./asset */ "./src/client/asset.ts");
+/* harmony import */ var _identity__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./identity */ "./src/client/identity.ts");
+/* harmony import */ var _message__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./message */ "./src/client/message.ts");
+/* harmony import */ var _smartcontract__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./smartcontract */ "./src/client/smartcontract.ts");
+
+
+
+
+const qrcodeApi = {
+    getAccount: _asset__WEBPACK_IMPORTED_MODULE_0__["assetApi"].getAccountReq,
+    getIdentity: _identity__WEBPACK_IMPORTED_MODULE_1__["identityApi"].getIdentityReq,
+    login: _message__WEBPACK_IMPORTED_MODULE_2__["messageApi"].loginReq,
+    invoke: _smartcontract__WEBPACK_IMPORTED_MODULE_3__["scApi"].invokeReq,
+    invokeRead: _smartcontract__WEBPACK_IMPORTED_MODULE_3__["scApi"].invokeReadReq,
+    invokePasswordFree: _smartcontract__WEBPACK_IMPORTED_MODULE_3__["scApi"].invokePasswordFreeReq
+};
 
 /***/ }),
 
@@ -550,6 +516,102 @@ const scApi = {
             }
         };
         return Object(_proxy__WEBPACK_IMPORTED_MODULE_1__["call"])(req);
+    },
+    invokeReq(params) {
+        if (!params.scriptHash || !params.operation || !params.args || params.args.length === 0) {
+            throw new Error('Invalid params.');
+        }
+        if (!params.payer) {
+            throw new Error('No payer.');
+        }
+        if (!params.config) {
+            params.config = {
+                login: true,
+                message: '',
+                url: ''
+            };
+        }
+        const functionParams = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["makeInvokeFunction"])(params.operation, params.args);
+        const req = {
+            action: 'invoke',
+            version: _proxy__WEBPACK_IMPORTED_MODULE_1__["version"],
+            params: {
+                login: params.config.login,
+                url: params.config.url,
+                message: params.config.message,
+                invokeConfig: {
+                    contractHash: params.scriptHash,
+                    functions: [functionParams],
+                    payer: params.payer,
+                    gasPrice: params.gasLimit = 500,
+                    gasLimit: params.gasPrice = 200000
+                }
+            }
+        };
+        return JSON.stringify(req);
+    },
+    invokeReadReq(params) {
+        if (!params.scriptHash || !params.operation || !params.args || params.args.length === 0) {
+            throw new Error('Invalid params.');
+        }
+        if (!params.config) {
+            params.config = {
+                login: true,
+                message: '',
+                url: ''
+            };
+        }
+        const functionParams = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["makeInvokeFunction"])(params.operation, params.args);
+        const req = {
+            action: 'invokeRead',
+            version: _proxy__WEBPACK_IMPORTED_MODULE_1__["version"],
+            params: {
+                login: params.config.login,
+                url: params.config.url,
+                message: params.config.message,
+                invokeConfig: {
+                    contractHash: params.scriptHash,
+                    functions: [functionParams],
+                    payer: params.payer,
+                    gasPrice: params.gasLimit = 500,
+                    gasLimit: params.gasPrice = 200000
+                }
+            }
+        };
+        return JSON.stringify(req);
+    },
+    invokePasswordFreeReq(params) {
+        if (!params.scriptHash || !params.operation || !params.args || params.args.length === 0) {
+            throw new Error('Invalid params.');
+        }
+        if (!params.payer) {
+            throw new Error('No payer.');
+        }
+        if (!params.config) {
+            params.config = {
+                login: true,
+                message: '',
+                url: ''
+            };
+        }
+        const functionParams = Object(_utils__WEBPACK_IMPORTED_MODULE_0__["makeInvokeFunction"])(params.operation, params.args);
+        const req = {
+            action: 'invokePasswordFree',
+            version: _proxy__WEBPACK_IMPORTED_MODULE_1__["version"],
+            params: {
+                login: params.config.login,
+                url: params.config.url,
+                message: params.config.message,
+                invokeConfig: {
+                    contractHash: params.scriptHash,
+                    functions: [functionParams],
+                    payer: params.payer,
+                    gasPrice: params.gasLimit = 500,
+                    gasLimit: params.gasPrice = 200000
+                }
+            }
+        };
+        return JSON.stringify(req);
     }
 };
 
@@ -624,6 +686,17 @@ function makeInvokeFunction(operation, args) {
     };
     return obj;
 }
+
+/***/ }),
+
+/***/ "uuid":
+/*!***********************!*\
+  !*** external "uuid" ***!
+  \***********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("uuid");
 
 /***/ })
 
