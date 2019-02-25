@@ -180,3 +180,40 @@ async handleLogin() {
         }
     }
 ```
+
+
+
+### 6. 转账ONT/ONG 
+
+相关代码在`src/components/login.vue` 
+
+注意转账的tokenType只能是ONG或ONT。在cyano provider中，会先预执行该请求，并向用户展示转账的具体内容，包含转账的发起方，接收方，转账金额等。用户确认后，交易真正发出。
+
+返回的结果包含交易hash，可用于从链上确认交易执行结果。
+
+```
+const params = {
+    from: this.sender,
+    to: this.receiver,
+    asset: this.tokenType,
+    amount: this.tokenType === 'ONG' ? parseInt(this.amount)*1e9 : this.amount,
+    gasPrice: 500,
+    gasLimit: 20000
+}
+try {
+    const res = await client.api.asset.transfer(params);
+        console.log(res)
+    if(res.error === 0) {
+        alert('Transaciton has been sent. The transaction hash is: ' + res.result)
+    }
+} catch(err) {
+    console.log(err)
+}
+```
+
+
+
+
+
+
+

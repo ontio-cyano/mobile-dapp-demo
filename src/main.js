@@ -8,11 +8,9 @@ import router from './router'
 const client = require('../static/index').client;
 client.registerClient();
 
-// 注册全局变量 cyanoBridge
-// var cyanoBridge = new CyanoMobile.CyanoBridge();
-// Vue.prototype.cyanoBridge = cyanoBridge;
+//we can set the client as global attribute
+// Vue.prototype.client = client;
 
-// CyanoMobile.client.registerClient();
 
 Vue.config.productionTip = false
 

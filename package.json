@@ -13,6 +13,7 @@
     "cyanobridge": "^0.0.3",
     "eventproxy": "^1.0.0",
     "ontology-ts-sdk": "^1.0.9",
+    "qrcode": "^1.3.2",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1"
   },

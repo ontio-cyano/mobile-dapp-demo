@@ -1,6 +1,6 @@
 <template>
   <div class="hello">
-      <p class="label">已登录账户: {{address}}</p>
+      <p class="label">Your account: {{address}}</p>
     <div class="border">
       <!-- invoke -->
         <div >
@@ -111,6 +111,8 @@ export default {
           type: 'Integer',
           "value": amount
         }]
+
+        
         const gasPrice = 500;
         const gasLimit = 20000;
         const payer = this.address;
