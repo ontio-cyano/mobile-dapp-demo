@@ -3,9 +3,9 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
-// import CyanoBridge from 'cyanobridge'
-// import { client } from 'cyanobridge'
-const client = require('../static/index').client;
+
+import { client } from 'cyanobridge'
+// const client = require('../static/index').client;
 client.registerClient();
 
 //we can set the client as global attribute

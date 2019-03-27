@@ -38,8 +38,8 @@
 </template>
 
 <script>
-const client = require('../../static/index').client;
-// import { client } from 'cyanobridge'
+// const client = require('../../static/index').client;
+import { client } from 'cyanobridge'
 
 export default {
   name: 'HelloWorld',

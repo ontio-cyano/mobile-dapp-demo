@@ -95,8 +95,8 @@
 <script>
 // const Ont = require('ontology-ts-sdk')
 import {Crypto, utils} from 'ontology-ts-sdk'
-const client = require('../../static/index').client;
-// import { client } from 'cyanobridge'
+// const client = require('../../static/index').client;
+import { client } from 'cyanobridge'
 
 export default {
     name: 'Login',
@@ -124,6 +124,20 @@ export default {
     },
     methods: {
         async handleLogin() {
+//             const res = {
+//     "action":"login",
+//     "version":"1.0.0",
+//     "id":"alcry6lk",
+//     error: 0,
+//     "result":{
+//         "publickey":"02f5ccc29c8680319729670a0d541658bb31b7e55a45bc162f8d7eedfd6fe91f70",
+//         "type":"account",
+//         "user":"Ac7yPJ8tRnv9Y1Z1Apftrj9BPYis17bTKR",
+//         "message":"test message",
+//         "signature":"016ce575cbd1e38c1da2d611aa7f7a62ae1c707aabb0f5f1a48b2610f8ef47a2b57610bc3b3bfaa6d4beedad548f6d851767225517b780b32820e74db5898f9c42"
+//     }
+// }
+        // this.handleLoginReturn(res)
             const  params = {
                     type: 'account',
                     dappName: 'My dapp',
@@ -152,7 +166,7 @@ export default {
                 const signature = Crypto.Signature.deserializeHex(result.signature)
                 const verified = pk.verify(message, signature)
                 if(verified) {
-                    const address = res.result.address;
+                    const address = res.result.user;
                     sessionStorage.setItem('address', address)
                     this.$router.push({name: 'HelloWorld'})
                 } else {
@@ -231,7 +245,7 @@ export default {
                 from: this.sender,
                 to: this.receiver,
                 asset: this.tokenType,
-                amount: this.tokenType === 'ONG' ? parseInt(this.amount)*1e9 : this.amount,
+                amount: this.tokenType === 'ONG' ? Number(this.amount)*1e9 : this.amount,
                 gasPrice: 500,
                 gasLimit: 20000
             }
